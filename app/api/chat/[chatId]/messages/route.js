@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+const { ObjectId } = mongoose.Types;
 import { searchSimilarChunks, getChatHistoryForToneAnalysis, analyzeTone } from '@/lib/vectorSearch';
 import { createSystemPrompt, streamChatCompletion } from '@/lib/openai';
 

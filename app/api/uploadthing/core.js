@@ -5,9 +5,10 @@ const f = createUploadthing();
 
 export const ourFileRouter = {
   documentUploader: f({
-    "application/pdf": { maxFileSize: "10MB", maxFileCount: 10 },
+    // 20MB limit - balanced for memory and capability
+    "application/pdf": { maxFileSize: "20MB", maxFileCount: 10 },
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-      maxFileSize: "10MB",
+      maxFileSize: "20MB",
       maxFileCount: 10,
     },
   })

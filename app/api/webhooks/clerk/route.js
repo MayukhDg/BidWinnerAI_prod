@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+const { ObjectId } = mongoose.Types;
 
 export async function POST(req) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;

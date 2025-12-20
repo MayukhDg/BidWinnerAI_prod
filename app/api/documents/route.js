@@ -1,20 +1,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+import { inngest } from '@/lib/inngest/client';
 
-async function processDocumentAsync(documentId) {
-  // Call the process endpoint internally
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const response = await fetch(`${baseUrl}/api/documents/process`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ documentId }),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to process document: ${response.statusText}`);
-  }
-  return response.json();
-}
+const { ObjectId } = mongoose.Types;
 
 export async function GET(req) {
   try {
@@ -74,17 +63,28 @@ export async function POST(req) {
       fileKey,
       fileType,
       uploadedAt: new Date(),
-      status: 'processing',
+      status: 'pending',
       chunkCount: 0,
+      processingProgress: 0,
     };
 
     const result = await documentsCollection.insertOne(document);
+    const documentId = result.insertedId.toString();
 
-    // Trigger processing (async) - use internal API call
-    // Note: In production, you might want to use a queue system
-    processDocumentAsync(result.insertedId.toString()).catch(console.error);
+    // Send event to Inngest for background processing
+    await inngest.send({
+      name: 'document/process.requested',
+      data: {
+        documentId,
+        userId: user._id.toString(),
+      },
+    });
 
-    return Response.json({ ...document, _id: result.insertedId });
+    return Response.json({ 
+      ...document, 
+      _id: result.insertedId,
+      status: 'processing', // Return as processing since job is queued
+    });
   } catch (error) {
     console.error('Error creating document:', error);
     return new Response('Internal Server Error', { status: 500 });

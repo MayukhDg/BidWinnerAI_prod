@@ -1,7 +1,15 @@
 import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+const { ObjectId } = mongoose.Types;
 import { parseDocument } from '@/lib/documentParser';
-import { generateEmbeddingsForChunks } from '@/lib/embeddings';
+import { generateEmbeddingsStream } from '@/lib/embeddings';
+
+// Maximum file size: 10MB
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// Vercel function config - increase timeout for Pro/Enterprise plans
+export const maxDuration = 60; // seconds (default is 10s on Hobby, 60s on Pro)
 
 export async function POST(req) {
   try {
@@ -32,6 +40,14 @@ export async function POST(req) {
     );
 
     try {
+      // Fetch file from UploadThing URL with size check via HEAD request
+      const headResponse = await fetch(document.fileUrl, { method: 'HEAD' });
+      const contentLength = parseInt(headResponse.headers.get('content-length') || '0', 10);
+      
+      if (contentLength > MAX_FILE_SIZE_BYTES) {
+        throw new Error(`File too large: ${(contentLength / 1024 / 1024).toFixed(2)}MB exceeds ${MAX_FILE_SIZE_MB}MB limit`);
+      }
+
       // Fetch file from UploadThing URL
       const fileResponse = await fetch(document.fileUrl);
       if (!fileResponse.ok) {
@@ -41,22 +57,33 @@ export async function POST(req) {
 
       // Parse document
       const { chunks } = await parseDocument(buffer, document.fileType);
+      console.log(`Parsed ${chunks.length} chunks from document ${documentId}`);
 
-      // Generate embeddings
-      const chunksWithEmbeddings = await generateEmbeddingsForChunks(chunks);
+      // Limit total chunks to prevent very long processing
+      const MAX_CHUNKS = 500;
+      const chunksToProcess = chunks.slice(0, MAX_CHUNKS);
+      if (chunks.length > MAX_CHUNKS) {
+        console.warn(`Document ${documentId} has ${chunks.length} chunks, processing first ${MAX_CHUNKS} only`);
+      }
 
-      // Store chunks in database
+      // Process embeddings in batches and insert incrementally
       const documentChunksCollection = await getCollection('documentChunks');
-      const chunksToInsert = chunksWithEmbeddings.map((chunk) => ({
-        documentId: new ObjectId(documentId),
-        userId: document.userId,
-        chunkIndex: chunk.chunkIndex,
-        content: chunk.content,
-        embedding: chunk.embedding,
-        metadata: chunk.metadata || {},
-      }));
+      let totalChunks = 0;
 
-      await documentChunksCollection.insertMany(chunksToInsert);
+      for await (const batchEmbeddings of generateEmbeddingsStream(chunksToProcess)) {
+        const chunksToInsert = batchEmbeddings.map((chunk) => ({
+          documentId: new ObjectId(documentId),
+          userId: document.userId,
+          chunkIndex: chunk.chunkIndex,
+          content: chunk.content,
+          embedding: chunk.embedding,
+          metadata: chunk.metadata || {},
+        }));
+
+        await documentChunksCollection.insertMany(chunksToInsert);
+        totalChunks += chunksToInsert.length;
+        console.log(`Inserted batch: ${totalChunks}/${chunksToProcess.length} chunks`);
+      }
 
       // Update document status
       await documentsCollection.updateOne(
@@ -64,25 +91,30 @@ export async function POST(req) {
         {
           $set: {
             status: 'completed',
-            chunkCount: chunksToInsert.length,
+            chunkCount: totalChunks,
           },
         }
       );
 
       return Response.json({
         success: true,
-        chunkCount: chunksToInsert.length,
+        chunkCount: totalChunks,
       });
     } catch (error) {
       console.error('Error processing document:', error);
       
-      // Update status to failed
+      // Update status to failed with error message
       await documentsCollection.updateOne(
         { _id: new ObjectId(documentId) },
-        { $set: { status: 'failed' } }
+        { 
+          $set: { 
+            status: 'failed',
+            error: error.message 
+          } 
+        }
       );
 
-      return new Response('Failed to process document', { status: 500 });
+      return new Response(`Failed to process document: ${error.message}`, { status: 500 });
     }
   } catch (error) {
     console.error('Error in process route:', error);

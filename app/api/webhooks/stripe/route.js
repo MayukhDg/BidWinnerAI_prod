@@ -1,7 +1,8 @@
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+const { ObjectId } = mongoose.Types;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 

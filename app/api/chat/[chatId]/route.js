@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+const { ObjectId } = mongoose.Types;
 
 export async function GET(req, { params }) {
   try {
