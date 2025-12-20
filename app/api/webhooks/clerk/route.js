@@ -1,4 +1,3 @@
-import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
@@ -27,23 +26,19 @@ export async function POST(req) {
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Create a new Svix instance with your secret.
-  const wh = new Webhook(WEBHOOK_SECRET);
-
+  // Verify webhook using svix (installed as an optional dependency).
   let evt;
-
-  // Verify the payload with the headers
   try {
+    const { Webhook } = await import('svix');
+    const wh = new Webhook(WEBHOOK_SECRET);
     evt = wh.verify(body, {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
     });
   } catch (err) {
-    console.error('Error verifying webhook:', err);
-    return new Response('Error occurred', {
-      status: 400,
-    });
+    console.error('svix verification failed:', err);
+    return new Response('Webhook verification failed', { status: 400 });
   }
 
   // Handle the webhook

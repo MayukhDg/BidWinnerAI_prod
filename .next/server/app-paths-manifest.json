@@ -1,4 +1,21 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(auth)/sign-in/[[...sign-in]]/page": "app/(auth)/sign-in/[[...sign-in]]/page.js",
   "/(auth)/sign-up/[[...sign-up]]/page": "app/(auth)/sign-up/[[...sign-up]]/page.js",
-  "/page": "app/page.js"
+  "/api/chat/[chatId]/route": "app/api/chat/[chatId]/route.js",
+  "/api/chat/[chatId]/messages/route": "app/api/chat/[chatId]/messages/route.js",
+  "/api/chat/route": "app/api/chat/route.js",
+  "/api/documents/process/route": "app/api/documents/process/route.js",
+  "/api/documents/route": "app/api/documents/route.js",
+  "/api/documents/[id]/route": "app/api/documents/[id]/route.js",
+  "/api/webhooks/stripe/route": "app/api/webhooks/stripe/route.js",
+  "/api/stripe/checkout/route": "app/api/stripe/checkout/route.js",
+  "/api/webhooks/clerk/route": "app/api/webhooks/clerk/route.js",
+  "/page": "app/page.js",
+  "/api/uploadthing/route": "app/api/uploadthing/route.js",
+  "/(dashboard)/chat/page": "app/(dashboard)/chat/page.js",
+  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/chat/[chatId]/page": "app/(dashboard)/chat/[chatId]/page.js",
+  "/(dashboard)/documents/page": "app/(dashboard)/documents/page.js"
 }

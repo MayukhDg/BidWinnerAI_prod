@@ -26,6 +26,9 @@
     "tailwind-merge": "^2.2.2",
     "lucide-react": "^0.344.0"
   },
+  "optionalDependencies": {
+    "svix": "^1.82.0"
+  },
   "devDependencies": {
     "tailwindcss": "^3.4.1",
     "postcss": "^8.4.35",
