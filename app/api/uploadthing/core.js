@@ -5,10 +5,9 @@ const f = createUploadthing();
 
 export const ourFileRouter = {
   documentUploader: f({
-    // 5MB limit for Vercel serverless memory constraints
-    "application/pdf": { maxFileSize: "5MB", maxFileCount: 10 },
+    // Only DOCX files - PDF parsing is unreliable on serverless
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-      maxFileSize: "5MB",
+      maxFileSize: "10MB",
       maxFileCount: 10,
     },
   })

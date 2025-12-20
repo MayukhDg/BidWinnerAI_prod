@@ -61,7 +61,7 @@ export default function DocumentUpload() {
             fileName: file.name,
             fileUrl: file.url,
             fileKey: file.key,
-            fileType: file.name.endsWith('.pdf') ? 'pdf' : 'docx',
+            fileType: 'docx', // Only DOCX supported
           }),
         });
 
@@ -89,8 +89,8 @@ export default function DocumentUpload() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Upload Your Winning Proposals</h2>
         <p className="text-gray-600 mb-4">
-          Upload PDF or Word documents (max 50MB). Documents are processed in the background 
-          and will be ready for AI-powered retrieval within a few minutes.
+          Upload Word documents (.docx) up to 10MB. Documents will be processed in the background 
+          and ready for AI-powered retrieval within a few minutes.
         </p>
         <UploadButton
           endpoint="documentUploader"
