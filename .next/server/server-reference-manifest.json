@@ -1,0 +1,18 @@
+{
+  "node": {
+    "c76a8864428088a872adcfef133dd8271c29d15d": {
+      "workers": {
+        "app/_not-found/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22E%3A%5C%5CMaking%20money%20with%20SASS%5C%5CApps%5C%5CRFP%20Generator%5C%5Cbidwinnerai%5C%5Cnode_modules%5C%5C%40clerk%5C%5Cnextjs%5C%5Cdist%5C%5Cesm%5C%5Capp-router%5C%5Cserver-actions.js%22%2C%5B%22invalidateCacheAction%22%5D%5D%5D&__client_imported__=true!",
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22E%3A%5C%5CMaking%20money%20with%20SASS%5C%5CApps%5C%5CRFP%20Generator%5C%5Cbidwinnerai%5C%5Cnode_modules%5C%5C%40clerk%5C%5Cnextjs%5C%5Cdist%5C%5Cesm%5C%5Capp-router%5C%5Cserver-actions.js%22%2C%5B%22invalidateCacheAction%22%5D%5D%5D&__client_imported__=true!",
+        "app/(auth)/sign-up/[[...sign-up]]/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22E%3A%5C%5CMaking%20money%20with%20SASS%5C%5CApps%5C%5CRFP%20Generator%5C%5Cbidwinnerai%5C%5Cnode_modules%5C%5C%40clerk%5C%5Cnextjs%5C%5Cdist%5C%5Cesm%5C%5Capp-router%5C%5Cserver-actions.js%22%2C%5B%22invalidateCacheAction%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/page": "action-browser",
+        "app/(auth)/sign-up/[[...sign-up]]/page": "action-browser"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "aYo7HX3KAgVcDiG0znndE779IxIjCnOeAkFQirNAFvw="
+}
