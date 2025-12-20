@@ -43,28 +43,45 @@ export async function POST(req) {
 
   // Handle the webhook
   const eventType = evt.type;
-  const { id, email_addresses, first_name, last_name } = evt.data;
+  const rawData = evt.data || {};
+
+  // Normalize possible shapes from Clerk/Svix
+  const id = rawData.id || rawData.user?.id || rawData.user_id || rawData.subject || rawData.user?.subject;
+  const email_addresses = rawData.email_addresses || rawData.emails || rawData.user?.email_addresses || rawData.user?.emails || [];
+  const first_name = rawData.first_name || rawData.user?.first_name || rawData.user?.firstName || '';
+  const last_name = rawData.last_name || rawData.user?.last_name || rawData.user?.lastName || '';
+
+  console.log('Clerk webhook event:', { eventType, id, emails: email_addresses?.length });
 
   if (eventType === 'user.created' || eventType === 'user.updated') {
-    const usersCollection = await getCollection('users');
-    const name = `${first_name || ''} ${last_name || ''}`.trim() || email_addresses[0]?.email_address || 'User';
+    if (!id) {
+      console.error('Webhook missing user id, skipping upsert', { eventType, rawData });
+    } else {
+      try {
+        const usersCollection = await getCollection('users');
+        const name = `${first_name || ''} ${last_name || ''}`.trim() || email_addresses[0]?.email_address || 'User';
 
-    await usersCollection.updateOne(
-      { clerkId: id },
-      {
-        $set: {
-          clerkId: id,
-          email: email_addresses[0]?.email_address || '',
-          name: name,
-          updatedAt: new Date(),
-        },
-        $setOnInsert: {
-          createdAt: new Date(),
-          subscriptionTier: 'free',
-        },
-      },
-      { upsert: true }
-    );
+        await usersCollection.updateOne(
+          { clerkId: id },
+          {
+            $set: {
+              clerkId: id,
+              email: email_addresses[0]?.email_address || email_addresses[0]?.email || rawData.email || '',
+              name: name,
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+              subscriptionTier: 'free',
+            },
+          },
+          { upsert: true }
+        );
+      } catch (dbErr) {
+        console.error('Error upserting Clerk user to DB:', dbErr);
+        return new Response('DB error', { status: 500 });
+      }
+    }
   }
 
   if (eventType === 'user.deleted') {
