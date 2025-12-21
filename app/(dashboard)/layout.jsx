@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }) {
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <Link href="/dashboard" className="text-xl font-bold">
-                  Bidwinner AI
+                  BidwinnerAI
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
