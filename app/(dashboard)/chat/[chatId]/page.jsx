@@ -19,7 +19,7 @@ export default async function ChatDetailPage({ params }) {
     redirect('/sign-in');
   }
 
-  const chatId = params.chatId;
+  const { chatId } = await params;
   const chatsCollection = await getCollection('chats');
   const chat = await chatsCollection.findOne({
     _id: new ObjectId(chatId),
@@ -31,10 +31,18 @@ export default async function ChatDetailPage({ params }) {
   }
 
   const messagesCollection = await getCollection('messages');
-  const messages = await messagesCollection
+  const rawMessages = await messagesCollection
     .find({ chatId: new ObjectId(chatId) })
     .sort({ createdAt: 1 })
     .toArray();
+
+  // Serialize messages for client component
+  const messages = rawMessages.map(msg => ({
+    _id: msg._id?.toString(),
+    role: msg.role,
+    content: msg.content,
+    createdAt: msg.createdAt?.toISOString?.() ?? msg.createdAt,
+  }));
 
   return (
     <div className="px-4 py-6 sm:px-0 h-[calc(100vh-8rem)]">

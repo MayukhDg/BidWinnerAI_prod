@@ -13,6 +13,10 @@ export default function ChatInterface({ chatId, initialMessages = [] }) {
   const router = useRouter();
 
   useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages, chatId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -104,62 +108,87 @@ export default function ChatInterface({ chatId, initialMessages = [] }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            <p className="text-lg font-semibold mb-2">Start a conversation</p>
-            <p>Paste your RFP requirement or ask a question about your proposals.</p>
+          <div className="flex flex-col items-center justify-center h-full text-center fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/30 float">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-slate-700 mb-2">Start a conversation</h3>
+            <p className="text-slate-500 max-w-md">
+              Paste your RFP requirement or ask a question about your proposals. I'll help you craft winning responses.
+            </p>
           </div>
         )}
         {messages.map((message, index) => (
-          <ChatMessage key={index} message={message} />
+          <div key={index} className="slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+            <ChatMessage message={message} />
+          </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-200 rounded-lg px-4 py-2">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="flex justify-start slide-up">
+            <div className="flex items-center gap-2 bg-white rounded-2xl px-5 py-3 shadow-sm border border-slate-100">
+              <div className="flex space-x-1.5">
+                <div className="typing-dot" />
+                <div className="typing-dot" />
+                <div className="typing-dot" />
               </div>
+              <span className="text-sm text-slate-400 ml-2">AI is thinking...</span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSubmit} className="border-t p-4">
-        {messages.length === 0 && (
-          <div className="mb-2">
-            <label className="block text-sm font-medium mb-1">
-              RFP Requirement (optional)
-            </label>
-            <textarea
-              value={rfpContext}
-              onChange={(e) => setRfpContext(e.target.value)}
-              placeholder="Paste the RFP requirement here..."
-              className="w-full p-2 border rounded mb-2"
-              rows={3}
-            />
+
+      {/* Input area */}
+      <div className="border-t border-slate-100 bg-slate-50/50 p-4">
+        <form onSubmit={handleSubmit}>
+          {messages.length === 0 && (
+            <div className="mb-4 fade-in">
+              <label className="block text-sm font-medium text-slate-600 mb-2">
+                RFP Requirement (optional)
+              </label>
+              <textarea
+                value={rfpContext}
+                onChange={(e) => setRfpContext(e.target.value)}
+                placeholder="Paste the RFP requirement here for better context..."
+                className="input-primary resize-none"
+                rows={3}
+              />
+            </div>
+          )}
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                className="w-full px-5 py-3.5 pr-12 rounded-xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder:text-slate-400"
+                disabled={isLoading}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="btn-primary px-6 flex items-center gap-2"
+            >
+              <span>Send</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
           </div>
-        )}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 p-2 border rounded"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Send
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

@@ -30,7 +30,13 @@ export async function POST(req) {
 
     const result = await chatsCollection.insertOne(chat);
 
-    return Response.json({ ...chat, _id: result.insertedId });
+    return Response.json({
+      ...chat,
+      _id: result.insertedId?.toString(),
+      userId: chat.userId?.toString(),
+      createdAt: chat.createdAt?.toISOString?.() ?? chat.createdAt,
+      updatedAt: chat.updatedAt?.toISOString?.() ?? chat.updatedAt,
+    });
   } catch (error) {
     console.error('Error creating chat:', error);
     return new Response('Internal Server Error', { status: 500 });
@@ -58,7 +64,15 @@ export async function GET(req) {
       .sort({ updatedAt: -1 })
       .toArray();
 
-    return Response.json(chats);
+    const serialized = chats.map((chat) => ({
+      ...chat,
+      _id: chat._id?.toString(),
+      userId: chat.userId?.toString(),
+      createdAt: chat.createdAt?.toISOString?.() ?? chat.createdAt,
+      updatedAt: chat.updatedAt?.toISOString?.() ?? chat.updatedAt,
+    }));
+
+    return Response.json(serialized);
   } catch (error) {
     console.error('Error fetching chats:', error);
     return new Response('Internal Server Error', { status: 500 });

@@ -20,7 +20,7 @@ export async function POST(req, { params }) {
       return new Response('User not found', { status: 404 });
     }
 
-    const chatId = params.chatId;
+    const { chatId } = await params;
     const body = await req.json();
     const { content, rfpContext } = body;
 

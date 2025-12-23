@@ -18,7 +18,7 @@ export async function DELETE(req, { params }) {
       return new Response('User not found', { status: 404 });
     }
 
-    const documentId = params.id;
+    const { id: documentId } = await params;
     const documentsCollection = await getCollection('documents');
     const documentChunksCollection = await getCollection('documentChunks');
 
