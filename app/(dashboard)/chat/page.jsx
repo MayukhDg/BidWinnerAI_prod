@@ -222,7 +222,6 @@ export default function ChatPage() {
                           <div className={`text-xs mt-0.5 ${
                             selectedChatId === chat._id ? 'text-indigo-100' : 'text-slate-400'
                           }`}>
-                            {chat.messageCount || 0} messages
                           </div>
                         </>
                       )}
