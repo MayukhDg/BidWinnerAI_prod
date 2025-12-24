@@ -16,10 +16,22 @@ export async function POST(req) {
       return new Response('User not found', { status: 404 });
     }
 
-    const body = await req.json();
-    const { title } = body;
-
     const chatsCollection = await getCollection('chats');
+    const MAX_CHATS_PER_USER = 1;
+    const existingChatCount = await chatsCollection.countDocuments({ userId: user._id });
+
+    if (existingChatCount >= MAX_CHATS_PER_USER) {
+      return Response.json(
+        {
+          error: 'You have reached the chat limit.',
+          limit: MAX_CHATS_PER_USER,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { title } = await req.json();
+
     const chat = {
       userId: user._id,
       title: title || 'New Chat',

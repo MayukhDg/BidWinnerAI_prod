@@ -11,6 +11,7 @@ export default function ChatPage() {
   const [editingChatId, setEditingChatId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [chatLimitMessage, setChatLimitMessage] = useState('');
   const menuRef = useRef(null);
   const router = useRouter();
 
@@ -41,6 +42,7 @@ export default function ChatPage() {
       if (response.ok) {
         const data = await response.json();
         setChats(data);
+        setChatLimitMessage(data.length > 0 ? 'Chat limit reached. Delete the existing chat to start fresh.' : '');
         if (data.length > 0 && !selectedChatId) {
           setSelectedChatId(data[0]._id);
         }
@@ -72,9 +74,14 @@ export default function ChatPage() {
 
       if (response.ok) {
         const newChat = await response.json();
-        setChats([newChat, ...chats]);
+        setChats(prevChats => [newChat, ...prevChats]);
         setSelectedChatId(newChat._id);
         setMessages([]);
+        setChatLimitMessage('Chat limit reached. Delete the existing chat to start fresh.');
+      } else {
+        const errorData = await response.json().catch(() => null);
+        setChatLimitMessage(errorData?.error || 'Unable to create another chat right now.');
+        return;
       }
     } catch (error) {
       console.error('Error creating chat:', error);
@@ -117,17 +124,21 @@ export default function ChatPage() {
       });
 
       if (response.ok) {
-        const remainingChats = chats.filter(chat => chat._id !== chatId);
-        setChats(remainingChats);
-        
-        if (selectedChatId === chatId) {
-          if (remainingChats.length > 0) {
-            setSelectedChatId(remainingChats[0]._id);
-          } else {
-            setSelectedChatId(null);
-            setMessages([]);
+        setChats(prevChats => {
+          const remainingChats = prevChats.filter(chat => chat._id !== chatId);
+          setChatLimitMessage(remainingChats.length > 0 ? 'Chat limit reached. Delete the existing chat to start fresh.' : '');
+
+          if (selectedChatId === chatId) {
+            if (remainingChats.length > 0) {
+              setSelectedChatId(remainingChats[0]._id);
+            } else {
+              setSelectedChatId(null);
+              setMessages([]);
+            }
           }
-        }
+
+          return remainingChats;
+        });
       }
     } catch (error) {
       console.error('Error deleting chat:', error);
@@ -157,13 +168,19 @@ export default function ChatPage() {
           <div className="mb-4">
             <button
               onClick={createNewChat}
-              className="w-full btn-primary flex items-center justify-center gap-2 py-3"
+              disabled={chats.length > 0}
+              className={`w-full btn-primary flex items-center justify-center gap-2 py-3 ${
+                chats.length > 0 ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               New Chat
             </button>
+            {chatLimitMessage && (
+              <p className="mt-2 text-xs text-indigo-500 text-center">{chatLimitMessage}</p>
+            )}
           </div>
           
           <div className="flex-1 overflow-y-auto space-y-2 pr-2">

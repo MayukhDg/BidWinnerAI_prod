@@ -7,7 +7,26 @@ import { useRouter } from 'next/navigation';
 export default function DocumentUpload() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [limitMessage, setLimitMessage] = useState('');
   const router = useRouter();
+  const MAX_DOCUMENTS = 10;
+
+  useEffect(() => {
+    const bootstrapFiles = async () => {
+      try {
+        const response = await fetch('/api/documents');
+        if (response.ok) {
+          const documents = await response.json();
+          setUploadedFiles(documents);
+          setLimitMessage(documents.length >= MAX_DOCUMENTS ? 'Document limit reached. Delete existing files to upload more.' : '');
+        }
+      } catch (error) {
+        console.error('Error loading documents:', error);
+      }
+    };
+
+    bootstrapFiles();
+  }, []);
 
   // Poll for document status updates
   const pollDocumentStatus = useCallback(async (documentId) => {
@@ -67,13 +86,20 @@ export default function DocumentUpload() {
 
         if (response.ok) {
           const document = await response.json();
-          setUploadedFiles(prev => [...prev, document]);
+          setUploadedFiles(prev => {
+            const next = [...prev, document];
+            setLimitMessage(next.length >= MAX_DOCUMENTS ? 'Document limit reached. Delete existing files to upload more.' : '');
+            return next;
+          });
           
           // Start polling for status updates
           pollDocumentStatus(document._id);
         } else {
-          console.error('Failed to create document record');
-          alert('Failed to process document. Please try again.');
+          const errorData = await response.json().catch(() => null);
+          const message = errorData?.error || 'Failed to process document. Please try again.';
+          console.error('Failed to create document record:', message);
+          setLimitMessage(message);
+          alert(message);
         }
       } catch (error) {
         console.error('Error creating document:', error);
@@ -104,19 +130,28 @@ export default function DocumentUpload() {
         </div>
         
         <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-indigo-300 hover:bg-indigo-50/30 transition-all duration-300">
-          <UploadButton
-            endpoint="documentUploader"
-            onClientUploadComplete={handleUploadComplete}
-            onUploadError={(error) => {
-              console.error('Upload error:', error);
-              alert(`Upload failed: ${error.message}`);
-            }}
-            appearance={{
-              button: "bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium py-3 px-6 rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-200 ut-uploading:opacity-70",
-              allowedContent: "text-slate-400 text-sm mt-2",
-            }}
-          />
+          {uploadedFiles.length >= MAX_DOCUMENTS ? (
+            <div className="text-sm text-indigo-500 font-medium">
+              Document limit reached. Remove a document to upload a new one.
+            </div>
+          ) : (
+            <UploadButton
+              endpoint="documentUploader"
+              onClientUploadComplete={handleUploadComplete}
+              onUploadError={(error) => {
+                console.error('Upload error:', error);
+                alert(`Upload failed: ${error.message}`);
+              }}
+              appearance={{
+                button: "bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium py-3 px-6 rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-200 ut-uploading:opacity-70",
+                allowedContent: "text-slate-400 text-sm mt-2",
+              }}
+            />
+          )}
         </div>
+        {limitMessage && (
+          <p className="mt-3 text-xs text-indigo-500 text-center">{limitMessage}</p>
+        )}
         
         {isUploading && (
           <div className="mt-4 flex items-center gap-2 text-sm text-slate-500 fade-in">

@@ -56,6 +56,19 @@ export async function POST(req) {
     }
 
     const documentsCollection = await getCollection('documents');
+    const MAX_DOCUMENTS_PER_USER = 10;
+    const existingDocumentCount = await documentsCollection.countDocuments({ userId: user._id });
+
+    if (existingDocumentCount >= MAX_DOCUMENTS_PER_USER) {
+      return Response.json(
+        {
+          error: 'Document upload limit reached.',
+          limit: MAX_DOCUMENTS_PER_USER,
+        },
+        { status: 400 }
+      );
+    }
+
     const document = {
       userId: user._id,
       fileName,
