@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { Webhooks } from '@polar-sh/sdk/webhooks';
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks';
 import { getCollection } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
@@ -9,26 +9,20 @@ export async function POST(req) {
   const body = await req.text();
   const headersList = await headers();
 
-  const webhookId = headersList.get('webhook-id');
-  const webhookTimestamp = headersList.get('webhook-timestamp');
-  const webhookSignature = headersList.get('webhook-signature');
-
-  if (!webhookId || !webhookTimestamp || !webhookSignature) {
-    console.error('Missing webhook headers');
-    return new Response('Missing webhook headers', { status: 400 });
-  }
-
   let event;
 
   try {
-    const webhooks = new Webhooks({ webhookSecret: process.env.POLAR_WEBHOOK_SECRET });
-    event = webhooks.verify(body, {
-      'webhook-id': webhookId,
-      'webhook-timestamp': webhookTimestamp,
-      'webhook-signature': webhookSignature,
-    });
+    event = validateEvent(
+      body,
+      Object.fromEntries(headersList.entries()),
+      process.env.POLAR_WEBHOOK_SECRET ?? ''
+    );
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    if (err instanceof WebhookVerificationError) {
+      console.error('Webhook signature verification failed:', err.message);
+      return new Response('Webhook verification failed', { status: 403 });
+    }
+    console.error('Webhook error:', err.message);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
