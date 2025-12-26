@@ -17,17 +17,24 @@ export async function POST(req) {
     }
 
     const chatsCollection = await getCollection('chats');
-    const MAX_CHATS_PER_USER = 1;
-    const existingChatCount = await chatsCollection.countDocuments({ userId: user._id });
+    
+    // Pro users have unlimited chats, free users limited to 1
+    const isPro = user.subscriptionTier === 'pro';
+    
+    if (!isPro) {
+      const MAX_CHATS_FREE = 1;
+      const existingChatCount = await chatsCollection.countDocuments({ userId: user._id });
 
-    if (existingChatCount >= MAX_CHATS_PER_USER) {
-      return Response.json(
-        {
-          error: 'You have reached the chat limit.',
-          limit: MAX_CHATS_PER_USER,
-        },
-        { status: 400 }
-      );
+      if (existingChatCount >= MAX_CHATS_FREE) {
+        return Response.json(
+          {
+            error: 'You have reached the chat limit. Upgrade to Pro for unlimited chats.',
+            limit: MAX_CHATS_FREE,
+            requiresUpgrade: true,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const { title } = await req.json();

@@ -161,78 +161,99 @@ export default function Home() {
         </section>
 
         {/* Pricing Section */}
-        { /* <section className="py-24 px-4">
-          <div className="max-w-5xl mx-auto">
+        <section className="py-24 px-4">
+          <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-4">Simple, Transparent Pricing</h2>
               <p className="text-slate-500 max-w-2xl mx-auto">
                 Start for free, upgrade when you're ready
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  name: 'Free',
-                  price: '$0',
-                  period: 'forever',
-                  features: ['5 documents', 'Basic AI features', 'Limited chat history'],
-                  cta: 'Get Started',
-                  popular: false,
-                },
-                {
-                  name: 'Pro',
-                  price: '$49',
-                  period: '/month',
-                  features: ['Unlimited documents', 'Advanced AI features', 'Full chat history', 'Priority support'],
-                  cta: 'Start Pro Trial',
-                  popular: true,
-                },
-                {
-                  name: 'Enterprise',
-                  price: '$99',
-                  period: '/month',
-                  features: ['Everything in Pro', 'Team collaboration', 'Custom integrations', 'Dedicated support'],
-                  cta: 'Contact Sales',
-                  popular: false,
-                },
-              ].map((plan, index) => (
-                <div 
-                  key={plan.name}
-                  className={`relative card p-8 slide-up ${plan.popular ? 'border-indigo-200 shadow-xl shadow-indigo-500/10 scale-105' : ''}`}
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                      <span className="px-4 py-1.5 text-sm font-medium rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30">
-                        Most Popular
-                      </span>
-                    </div>
-                  )}
-                  <h3 className="text-xl font-semibold text-slate-800 mb-2">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-4xl font-bold text-slate-800">{plan.price}</span>
-                    <span className="text-slate-400">{plan.period}</span>
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-slate-600">
-                        <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className={`w-full ${plan.popular ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    {plan.cta}
-                  </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+              {/* Free Tier */}
+              <div className="relative card p-8 slide-up">
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">Free</h3>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl font-bold text-slate-800">$0</span>
+                  <span className="text-slate-400">forever</span>
                 </div>
-              ))}
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    1 chat conversation
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    10 documents
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    AI-powered RFP assistance
+                  </li>
+                </ul>
+                <SignedOut>
+                  <Link href="/sign-up">
+                    <Button className="w-full btn-secondary">Get Started</Button>
+                  </Link>
+                </SignedOut>
+                <SignedIn>
+                  <Link href="/dashboard">
+                    <Button className="w-full btn-secondary">Go to Dashboard</Button>
+                  </Link>
+                </SignedIn>
+              </div>
+
+              {/* Pro Tier */}
+              <div className="relative card p-8 slide-up border-indigo-200 shadow-xl shadow-indigo-500/10 scale-105" style={{ animationDelay: '150ms' }}>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1.5 text-sm font-medium rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30">
+                    Most Popular
+                  </span>
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">Pro</h3>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl font-bold text-slate-800">$60</span>
+                  <span className="text-slate-400">/month</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Unlimited chats
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Unlimited documents
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Priority AI responses
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Priority support
+                  </li>
+                </ul>
+                <Link href="/pricing">
+                  <Button className="w-full btn-primary">Upgrade to Pro</Button>
+                </Link>
+              </div>
             </div>
           </div>
-        </section> */}
+        </section>
 
         {/* CTA Section */}
         <section className="py-24 px-4 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">

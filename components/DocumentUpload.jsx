@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { UploadButton } from '@/utils/uploadthing';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function DocumentUpload() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [limitMessage, setLimitMessage] = useState('');
+  const [requiresUpgrade, setRequiresUpgrade] = useState(false);
   const router = useRouter();
   const MAX_DOCUMENTS = 10;
 
@@ -99,6 +101,7 @@ export default function DocumentUpload() {
           const message = errorData?.error || 'Failed to process document. Please try again.';
           console.error('Failed to create document record:', message);
           setLimitMessage(message);
+          setRequiresUpgrade(errorData?.requiresUpgrade || false);
           alert(message);
         }
       } catch (error) {
@@ -150,7 +153,17 @@ export default function DocumentUpload() {
           )}
         </div>
         {limitMessage && (
-          <p className="mt-3 text-xs text-indigo-500 text-center">{limitMessage}</p>
+          <div className="mt-3 text-center">
+            <p className="text-xs text-indigo-500">{limitMessage}</p>
+            {requiresUpgrade && (
+              <Link
+                href="/pricing"
+                className="inline-block mt-2 text-xs font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1 rounded-full hover:shadow-lg transition-all"
+              >
+                Upgrade to Pro
+              </Link>
+            )}
+          </div>
         )}
         
         {isUploading && (

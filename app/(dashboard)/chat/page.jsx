@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 
 export default function ChatPage() {
@@ -12,6 +13,7 @@ export default function ChatPage() {
   const [editTitle, setEditTitle] = useState('');
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [chatLimitMessage, setChatLimitMessage] = useState('');
+  const [requiresUpgrade, setRequiresUpgrade] = useState(false);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const menuRef = useRef(null);
   const router = useRouter();
@@ -85,6 +87,7 @@ export default function ChatPage() {
       } else {
         const errorData = await response.json().catch(() => null);
         setChatLimitMessage(errorData?.error || 'Unable to create another chat right now.');
+        setRequiresUpgrade(errorData?.requiresUpgrade || false);
         return;
       }
     } catch (error) {
@@ -183,7 +186,17 @@ export default function ChatPage() {
               New Chat
             </button>
             {chatLimitMessage && (
-              <p className="mt-2 text-xs text-indigo-500 text-center">{chatLimitMessage}</p>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-indigo-500">{chatLimitMessage}</p>
+                {requiresUpgrade && (
+                  <Link
+                    href="/pricing"
+                    className="inline-block mt-2 text-xs font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1 rounded-full hover:shadow-lg transition-all"
+                  >
+                    Upgrade to Pro
+                  </Link>
+                )}
+              </div>
             )}
           </div>
           

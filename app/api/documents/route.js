@@ -56,17 +56,24 @@ export async function POST(req) {
     }
 
     const documentsCollection = await getCollection('documents');
-    const MAX_DOCUMENTS_PER_USER = 10;
-    const existingDocumentCount = await documentsCollection.countDocuments({ userId: user._id });
+    
+    // Pro users have unlimited documents, free users limited to 10
+    const isPro = user.subscriptionTier === 'pro';
+    
+    if (!isPro) {
+      const MAX_DOCUMENTS_FREE = 10;
+      const existingDocumentCount = await documentsCollection.countDocuments({ userId: user._id });
 
-    if (existingDocumentCount >= MAX_DOCUMENTS_PER_USER) {
-      return Response.json(
-        {
-          error: 'Document upload limit reached.',
-          limit: MAX_DOCUMENTS_PER_USER,
-        },
-        { status: 400 }
-      );
+      if (existingDocumentCount >= MAX_DOCUMENTS_FREE) {
+        return Response.json(
+          {
+            error: 'Document upload limit reached. Upgrade to Pro for unlimited uploads.',
+            limit: MAX_DOCUMENTS_FREE,
+            requiresUpgrade: true,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const document = {
