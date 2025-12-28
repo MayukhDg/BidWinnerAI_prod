@@ -34,7 +34,8 @@ export async function POST(req) {
     const rfpId = result.insertedId;
 
     // Trigger Worker
-    const workerUrl = process.env.WORKER_URL || 'http://localhost:4000';
+    // Ensure no trailing slash in URL
+    const workerUrl = (process.env.WORKER_URL || 'http://localhost:4000').replace(/\/$/, '');
     const workerKey = process.env.WORKER_API_KEY;
 
     // Fire and forget (or await if we want to block until worker accepts)
