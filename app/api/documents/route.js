@@ -3,6 +3,8 @@ import { getCollection } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { inngest } from '@/lib/inngest/client';
 
+export const dynamic = 'force-dynamic';
+
 const { ObjectId } = mongoose.Types;
 
 export async function GET(req) {

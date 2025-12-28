@@ -1,6 +1,8 @@
 import { auth } from '@clerk/nextjs/server';
 import { getCollection } from '@/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   try {
     const { userId } = await auth();
