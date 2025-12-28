@@ -21,8 +21,21 @@ export async function GET(req) {
     }
 
     const documentsCollection = await getCollection('documents');
+    const rfpsCollection = await getCollection('rfps');
+
+    // Find all documents that are linked to RFPs
+    const rfps = await rfpsCollection
+      .find({ userId: user._id }, { projection: { documentId: 1 } })
+      .toArray();
+    
+    const rfpDocumentIds = rfps.map(r => r.documentId);
+
     const documents = await documentsCollection
-      .find({ userId: user._id })
+      .find({ 
+        userId: user._id,
+        purpose: { $ne: 'rfp_source' }, // Filter out new RFP docs
+        _id: { $nin: rfpDocumentIds }   // Filter out legacy RFP docs
+      })
       .sort({ uploadedAt: -1 })
       .toArray();
 
@@ -49,7 +62,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { fileName, fileUrl, fileKey, fileType } = body;
+    const { fileName, fileUrl, fileKey, fileType, purpose = 'knowledge_base' } = body;
 
     if (!fileName || !fileUrl || !fileKey || !fileType) {
       return new Response('Missing required fields', { status: 400 });
@@ -60,9 +73,32 @@ export async function POST(req) {
     // Pro users have unlimited documents, free users limited to 10
     const isPro = user.subscriptionTier === 'pro';
     
-    if (!isPro) {
+    // Enforce limit for RFP documents (1 for free users)
+    if (!isPro && purpose === 'rfp_source') {
+      const rfpsCollection = await getCollection('rfps');
+      const existingRFPCount = await rfpsCollection.countDocuments({ 
+        userId: user._id 
+      });
+
+      if (existingRFPCount >= 1) {
+        return Response.json(
+          {
+            error: 'Free plan is limited to 1 RFP project. Upgrade to Pro for unlimited projects.',
+            limit: 1,
+            requiresUpgrade: true,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Only enforce limit for knowledge base documents
+    if (!isPro && purpose === 'knowledge_base') {
       const MAX_DOCUMENTS_FREE = 10;
-      const existingDocumentCount = await documentsCollection.countDocuments({ userId: user._id });
+      const existingDocumentCount = await documentsCollection.countDocuments({ 
+        userId: user._id,
+        purpose: 'knowledge_base'
+      });
 
       if (existingDocumentCount >= MAX_DOCUMENTS_FREE) {
         return Response.json(
@@ -82,6 +118,7 @@ export async function POST(req) {
       fileUrl,
       fileKey,
       fileType,
+      purpose,
       uploadedAt: new Date(),
       status: 'pending',
       chunkCount: 0,

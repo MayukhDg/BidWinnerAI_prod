@@ -83,6 +83,7 @@ export default function DocumentUpload() {
             fileUrl: file.url,
             fileKey: file.key,
             fileType: 'docx', // Only DOCX supported
+            purpose: 'knowledge_base',
           }),
         });
 

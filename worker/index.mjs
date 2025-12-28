@@ -60,7 +60,27 @@ const DocumentChunkSchema = new Schema({
   metadata: Schema.Types.Mixed,
 });
 
-let Document, DocumentChunk;
+const RFPSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+  documentId: { type: Schema.Types.ObjectId, ref: 'Document' },
+  title: String,
+  status: { type: String, default: 'draft' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: Date,
+});
+
+const RFPQuestionSchema = new Schema({
+  rfpId: { type: Schema.Types.ObjectId, ref: 'RFP', index: true },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+  question: String,
+  answer: String,
+  status: { type: String, default: 'pending' },
+  assignedTo: String,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: Date,
+});
+
+let Document, DocumentChunk, RFP, RFPQuestion;
 let dbConnected = false;
 
 async function connectDB() {
@@ -68,6 +88,8 @@ async function connectDB() {
   await mongoose.connect(process.env.MONGODB_URI);
   Document = mongoose.models.Document || mongoose.model('Document', DocumentSchema);
   DocumentChunk = mongoose.models.DocumentChunk || mongoose.model('DocumentChunk', DocumentChunkSchema);
+  RFP = mongoose.models.RFP || mongoose.model('RFP', RFPSchema);
+  RFPQuestion = mongoose.models.RFPQuestion || mongoose.model('RFPQuestion', RFPQuestionSchema);
   dbConnected = true;
   console.log('[worker] MongoDB connected');
 }
@@ -121,20 +143,30 @@ async function parseDocx(buffer) {
   if (!docXmlFile) throw new Error('word/document.xml not found in DOCX');
 
   let xmlContent = await docXmlFile.async('string');
-  xmlContent = xmlContent
-    .replace(/<w:tab\s*\/?>/g, ' ')
-    .replace(/<w:br\s*\/?>/g, '\n')
-    .replace(/<w:cr\s*\/?>/g, '\n');
-
-  const texts = [];
-  const wtRegex = /<w:t[^>]*>([\s\S]*?)<\/w:t>/g;
+  
+  // Simple XML parsing to preserve structure
+  const parts = [];
+  // Match paragraphs, breaks, tabs, and text runs
+  const regex = /<w:p[^>]*>|<\/w:p>|<w:br[^>]*\/>|<w:tab[^>]*\/>|<w:t[^>]*>([\s\S]*?)<\/w:t>/g;
+  
   let match;
-  while ((match = wtRegex.exec(xmlContent)) !== null) {
-    texts.push(decodeXmlEntities(match[1] || ''));
-    if (texts.length > 200000) throw new Error('DOCX appears malformed');
+  while ((match = regex.exec(xmlContent)) !== null) {
+    const tag = match[0];
+    if (tag.startsWith('<w:p')) {
+      // Start of paragraph - maybe add newline if not first?
+    } else if (tag.startsWith('</w:p>')) {
+      parts.push('\n');
+    } else if (tag.startsWith('<w:br')) {
+      parts.push('\n');
+    } else if (tag.startsWith('<w:tab')) {
+      parts.push('\t');
+    } else if (tag.startsWith('<w:t')) {
+      // Text content
+      parts.push(decodeXmlEntities(match[1] || ''));
+    }
   }
 
-  const text = texts.join(' ').replace(/\s+/g, ' ').trim();
+  const text = parts.join('').trim();
   if (!text || text.length < 10) throw new Error('No text content found in DOCX');
 
   let chunks = chunkText(text);
@@ -253,6 +285,120 @@ app.post('/process-document', async (req, res) => {
       await Document.updateOne(
         { _id: new ObjectId(documentId) },
         { $set: { status: 'failed', error: err.message, processingFailedAt: new Date() } }
+      );
+    } catch (_) {}
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/process-rfp', async (req, res) => {
+  const auth = req.get('x-worker-key');
+  if (!auth || auth !== process.env.WORKER_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { documentId, rfpId } = req.body || {};
+  if (!documentId || !rfpId) {
+    return res.status(400).json({ error: 'documentId and rfpId are required' });
+  }
+
+  try {
+    await connectDB();
+    const { ObjectId } = mongoose.Types;
+
+    const doc = await Document.findOne({ _id: new ObjectId(documentId) }).lean();
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    await RFP.updateOne(
+      { _id: new ObjectId(rfpId) },
+      { $set: { status: 'processing' } }
+    );
+
+    console.log(`[worker] Fetching RFP doc: ${doc.fileUrl}`);
+    const response = await fetch(doc.fileUrl);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Parse to get full text
+    const { text } = await parseDocument(buffer, doc.fileType);
+    console.log(`[worker] Extracted ${text.length} chars from RFP`);
+    console.log(`[worker] Preview: ${text.slice(0, 200)}...`);
+
+    // Extract questions using OpenAI
+    console.log('[worker] Sending to OpenAI for question extraction...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert RFP analyzer. Extract all questions, requirements, and compliance items from the provided RFP text. Return a JSON object with a key "questions" containing an array of strings. Each string should be a distinct question or requirement. If the text contains numbered lists or bullet points that look like requirements, include them.'
+        },
+        {
+          role: 'user',
+          content: text.slice(0, 100000) // Safety limit
+        }
+      ],
+      response_format: { type: 'json_object' }
+    });
+
+    const rawContent = completion.choices[0].message.content;
+    console.log(`[worker] OpenAI Response: ${rawContent.slice(0, 500)}...`);
+
+    let result;
+    try {
+      result = JSON.parse(rawContent);
+    } catch (e) {
+      console.error('[worker] Failed to parse OpenAI JSON:', e);
+      throw new Error('Failed to parse AI response');
+    }
+
+    const questions = result.questions || [];
+    console.log(`[worker] Extracted ${questions.length} questions`);
+
+    if (questions.length > 0) {
+      const questionDocs = questions.map(q => ({
+        rfpId: new ObjectId(rfpId),
+        userId: new ObjectId(doc.userId),
+        question: q,
+        status: 'pending'
+      }));
+      await RFPQuestion.insertMany(questionDocs);
+    }
+
+    await RFP.updateOne(
+      { _id: new ObjectId(rfpId) },
+      { $set: { status: 'completed' } }
+    );
+
+    // Trigger Webhook
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    try {
+      await fetch(`${appUrl}/api/rfp/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-worker-key': process.env.WORKER_API_KEY,
+        },
+        body: JSON.stringify({ rfpId, status: 'completed' }),
+      });
+    } catch (e) {
+      console.error('[worker] Failed to trigger webhook:', e);
+    }
+
+    res.json({ ok: true, questionCount: questions.length });
+
+  } catch (err) {
+    console.error('[worker] RFP Error:', err);
+    try {
+      await connectDB();
+      const { ObjectId } = mongoose.Types;
+      await RFP.updateOne(
+        { _id: new ObjectId(rfpId) },
+        { $set: { status: 'failed' } }
       );
     } catch (_) {}
     res.status(500).json({ error: err.message });
