@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks';
 import { getCollection } from '@/lib/mongodb';
 import mongoose from 'mongoose';
+import { CREDIT_PACKAGES } from '@/lib/polar';
 
 const { ObjectId } = mongoose.Types;
 
@@ -31,7 +32,7 @@ export async function POST(req) {
   const usersCollection = await getCollection('users');
   const ordersCollection = await getCollection('orders');
 
-  // Handle successful subscription
+  // Handle successful subscription/order
   if (
     event.type === 'checkout.created' ||
     event.type === 'order.created' ||
@@ -69,30 +70,39 @@ export async function POST(req) {
     }
 
     if (user) {
-      // Update user to pro subscription
-      await usersCollection.updateOne(
-        { _id: user._id },
-        {
-          $set: {
-            subscriptionTier: 'pro',
-            polarCustomerId: data.customerId || data.customer?.id,
-            subscriptionUpdatedAt: new Date(),
-            updatedAt: new Date(),
-          },
-        }
-      );
+      // Determine credits to add
+      let creditsToAdd = 0;
+      const productId = data.productId;
+      
+      const packageFound = Object.values(CREDIT_PACKAGES).find(pkg => pkg.productId === productId);
+      if (packageFound) {
+        creditsToAdd = packageFound.credits;
+      }
 
-      console.log(`User ${user.email} upgraded to pro`);
+      if (creditsToAdd > 0) {
+         await usersCollection.updateOne(
+          { _id: user._id },
+          {
+            $inc: { credits: creditsToAdd },
+            $set: {
+              polarCustomerId: data.customerId || data.customer?.id,
+              updatedAt: new Date(),
+            },
+          }
+        );
+        console.log(`User ${user.email} received ${creditsToAdd} credits`);
+      }
 
       // Create order record
       await ordersCollection.insertOne({
         userId: user._id,
         polarOrderId: data.id,
         polarCustomerId: data.customerId || data.customer?.id,
-        amount: (data.amount || data.totalAmount || 6000) / 100,
+        amount: (data.amount || data.totalAmount || 0) / 100,
         currency: data.currency || 'usd',
         status: 'completed',
         productId: data.productId,
+        creditsAdded: creditsToAdd,
         createdAt: new Date(),
       });
     } else {
@@ -100,26 +110,5 @@ export async function POST(req) {
     }
   }
 
-  // Handle subscription cancellation (if you add subscriptions later)
-  if (event.type === 'subscription.canceled' || event.type === 'subscription.revoked') {
-    const data = event.data;
-    const customerEmail = data.customerEmail || data.customer?.email;
-
-    if (customerEmail) {
-      await usersCollection.updateOne(
-        { email: customerEmail },
-        {
-          $set: {
-            subscriptionTier: 'free',
-            subscriptionUpdatedAt: new Date(),
-            updatedAt: new Date(),
-          },
-        }
-      );
-
-      console.log(`User ${customerEmail} downgraded to free`);
-    }
-  }
-
-  return new Response(JSON.stringify({ received: true }), { status: 200 });
+  return new Response('Webhook processed', { status: 200 });
 }

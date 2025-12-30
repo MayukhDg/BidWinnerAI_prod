@@ -72,48 +72,6 @@ export async function POST(req) {
 
     const documentsCollection = await getCollection('documents');
     
-    // Pro users have unlimited documents, free users limited to 10
-    const isPro = user.subscriptionTier === 'pro';
-    
-    // Enforce limit for RFP documents (1 for free users)
-    if (!isPro && purpose === 'rfp_source') {
-      const rfpsCollection = await getCollection('rfps');
-      const existingRFPCount = await rfpsCollection.countDocuments({ 
-        userId: user._id 
-      });
-
-      if (existingRFPCount >= 1) {
-        return Response.json(
-          {
-            error: 'Free plan is limited to 1 RFP project. Upgrade to Pro for unlimited projects.',
-            limit: 1,
-            requiresUpgrade: true,
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Only enforce limit for knowledge base documents
-    if (!isPro && purpose === 'knowledge_base') {
-      const MAX_DOCUMENTS_FREE = 10;
-      const existingDocumentCount = await documentsCollection.countDocuments({ 
-        userId: user._id,
-        purpose: 'knowledge_base'
-      });
-
-      if (existingDocumentCount >= MAX_DOCUMENTS_FREE) {
-        return Response.json(
-          {
-            error: 'Document upload limit reached. Upgrade to Pro for unlimited uploads.',
-            limit: MAX_DOCUMENTS_FREE,
-            requiresUpgrade: true,
-          },
-          { status: 400 }
-        );
-      }
-    }
-
     const document = {
       userId: user._id,
       fileName,
@@ -122,30 +80,27 @@ export async function POST(req) {
       fileType,
       purpose,
       uploadedAt: new Date(),
-      status: 'pending',
-      chunkCount: 0,
-      processingProgress: 0,
+      status: 'processing', // Initial status
     };
 
     const result = await documentsCollection.insertOne(document);
-    const documentId = result.insertedId.toString();
+    const documentId = result.insertedId;
 
-    // Send event to Inngest for background processing
+    // Trigger Inngest event
     await inngest.send({
-      name: 'document/process.requested',
+      name: 'document/process',
       data: {
-        documentId,
+        documentId: documentId.toString(),
         userId: user._id.toString(),
+        fileUrl,
+        fileKey,
+        fileType,
       },
     });
 
-    return Response.json({ 
-      ...document, 
-      _id: result.insertedId,
-      status: 'processing', // Return as processing since job is queued
-    });
+    return Response.json({ ...document, _id: documentId });
   } catch (error) {
-    console.error('Error creating document:', error);
+    console.error('Error uploading document:', error);
     return new Response('Internal Server Error', { status: 500 });
   }
 }

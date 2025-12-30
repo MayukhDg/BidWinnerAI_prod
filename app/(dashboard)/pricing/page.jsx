@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
   const [subscription, setSubscription] = useState(null);
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const success = searchParams.get('success');
@@ -24,19 +23,17 @@ export default function PricingPage() {
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
-    } finally {
-      setIsLoadingSubscription(false);
     }
   };
 
-  const handleUpgrade = async () => {
+  const handlePurchase = async (packageId) => {
     setLoading(true);
     try {
       const response = await fetch('/api/polar/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId: process.env.NEXT_PUBLIC_POLAR_PRODUCT_ID,
+          packageId,
         }),
       });
 
@@ -55,8 +52,6 @@ export default function PricingPage() {
     }
   };
 
-  const isPro = subscription?.isPro;
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       {success && (
@@ -64,157 +59,99 @@ export default function PricingPage() {
           <svg className="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <p className="font-medium">Payment successful! Welcome to BidWinner AI Pro.</p>
+          <p className="font-medium">Payment successful! Credits have been added to your account.</p>
         </div>
       )}
 
       <div className="text-center mb-12 fade-in">
         <h1 className="text-4xl font-bold text-slate-800 mb-4">
-          Upgrade to <span className="gradient-text">Pro</span>
+          Purchase <span className="gradient-text">Credits</span>
         </h1>
         <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-          Unlock unlimited access to BidWinner AI and supercharge your proposal writing.
+          Pay as you go. No monthly subscriptions.
         </p>
+        <div className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 font-medium">
+          Current Balance: {subscription?.credits || 0} Credits
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 slide-up">
-        {/* Free Plan */}
-        <div className="card p-8 border-2 border-slate-200">
+        {/* 1 Credit */}
+        <div className="card p-8 border-2 border-slate-200 hover:border-indigo-200 transition-colors">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-700 mb-2">Free</h2>
+            <h2 className="text-2xl font-bold text-slate-700 mb-2">1 Credit</h2>
             <div className="text-4xl font-bold text-slate-800">
-              $0
-              <span className="text-lg font-normal text-slate-500">/forever</span>
+              $15
             </div>
+            <p className="text-slate-500 mt-2">Perfect for a single RFP</p>
           </div>
 
           <ul className="space-y-4 mb-8">
             <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              1 Chat conversation
+              Generate 1 Full Proposal
             </li>
             <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              10 Document uploads
-            </li>
-            <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              AI-powered proposals
-            </li>
-            <li className="flex items-center gap-3 text-slate-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span className="line-through">Unlimited chats</span>
-            </li>
-            <li className="flex items-center gap-3 text-slate-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span className="line-through">Unlimited documents</span>
+              Unlimited Document Uploads
             </li>
           </ul>
 
           <button
-            disabled
-            className="w-full py-3 px-6 rounded-xl font-medium bg-slate-100 text-slate-400 cursor-not-allowed"
+            onClick={() => handlePurchase('ONE_CREDIT')}
+            disabled={loading}
+            className="w-full py-3 px-6 rounded-xl bg-white border-2 border-indigo-600 text-indigo-600 font-semibold hover:bg-indigo-50 transition-all duration-200 disabled:opacity-50"
           >
-            Current Plan
+            {loading ? 'Processing...' : 'Buy 1 Credit'}
           </button>
         </div>
 
-        {/* Pro Plan */}
+        {/* 5 Credits */}
         <div className="card p-8 border-2 border-indigo-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl">
-            RECOMMENDED
+          <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+            BEST VALUE
           </div>
-
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-700 mb-2">Pro</h2>
+            <h2 className="text-2xl font-bold text-slate-700 mb-2">5 Credits</h2>
             <div className="text-4xl font-bold text-slate-800">
               $60
-              <span className="text-lg font-normal text-slate-500">/month</span>
             </div>
-            <p className="text-sm text-indigo-600 mt-1">Cancel anytime</p>
+            <p className="text-slate-500 mt-2">Save $15</p>
           </div>
 
           <ul className="space-y-4 mb-8">
             <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <strong>Unlimited</strong> Chat conversations
+              Generate 5 Full Proposals
             </li>
             <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <strong>Unlimited</strong> Document uploads
+              Unlimited Document Uploads
             </li>
             <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              AI-powered proposals
-            </li>
-            <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Priority support
-            </li>
-            <li className="flex items-center gap-3 text-slate-600">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Future updates included
+              Priority Support
             </li>
           </ul>
 
-          {isLoadingSubscription ? (
-            <button
-              disabled
-              className="w-full py-3 px-6 rounded-xl font-medium bg-slate-100 text-slate-400"
-            >
-              Loading...
-            </button>
-          ) : isPro ? (
-            <button
-              disabled
-              className="w-full py-3 px-6 rounded-xl font-medium bg-emerald-100 text-emerald-600 cursor-default"
-            >
-              ✓ You have Pro access
-            </button>
-          ) : (
-            <button
-              onClick={handleUpgrade}
-              disabled={loading}
-              className="w-full btn-primary py-3 px-6 font-medium disabled:opacity-60"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                'Upgrade to Pro - $60/mo'
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => handlePurchase('FIVE_CREDITS')}
+            disabled={loading}
+            className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-50"
+          >
+            {loading ? 'Processing...' : 'Buy 5 Credits'}
+          </button>
         </div>
-      </div>
-
-      <div className="mt-12 text-center text-slate-500 text-sm fade-in">
-        <p>Secure payment powered by Polar. Cancel anytime.</p>
       </div>
     </div>
   );

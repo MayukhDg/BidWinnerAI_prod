@@ -1,9 +1,26 @@
+import { auth } from '@clerk/nextjs/server';
 import { getCollection } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 const { ObjectId } = mongoose.Types;
 
 export async function POST(req) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const usersCollection = await getCollection('users');
+    const user = await usersCollection.findOne({ clerkId: userId });
+
+    if (!user) {
+      return new Response('User not found', { status: 404 });
+    }
+
+    if ((user.credits || 0) < 1) {
+      return new Response('Insufficient credits', { status: 403 });
+    }
+
     const { documentId, title } = await req.json();
 
     if (!documentId || !title) {
@@ -21,9 +38,12 @@ export async function POST(req) {
       return new Response('Document not found', { status: 404 });
     }
 
+    // Decrement credits
+    await usersCollection.updateOne({ _id: user._id }, { $inc: { credits: -1 } });
+
     // Create RFP record
     const rfp = {
-      userId: document.userId,
+      userId: user._id, // Use authenticated user ID
       documentId: new ObjectId(documentId),
       title,
       status: 'draft',
@@ -63,6 +83,8 @@ export async function POST(req) {
         { _id: rfpId },
         { $set: { status: 'failed' } }
       );
+      // Refund credit if worker fails immediately
+      await usersCollection.updateOne({ _id: user._id }, { $inc: { credits: 1 } });
       return new Response('Failed to start processing worker. Is it running?', { status: 503 });
     }
 

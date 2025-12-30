@@ -74,6 +74,7 @@ export async function POST(req) {
             $setOnInsert: {
               createdAt: new Date(),
               subscriptionTier: 'free',
+              credits: 1,
             },
           },
           { upsert: true }

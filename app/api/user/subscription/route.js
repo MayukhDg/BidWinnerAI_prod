@@ -22,6 +22,7 @@ export async function GET(req) {
       subscriptionTier: user.subscriptionTier || 'free',
       isPro: user.subscriptionTier === 'pro',
       email: user.email,
+      credits: user.credits || 0,
     });
   } catch (error) {
     console.error('Error fetching subscription:', error);

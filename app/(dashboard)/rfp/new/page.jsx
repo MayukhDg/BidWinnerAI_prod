@@ -74,7 +74,15 @@ export default function NewRFPPage() {
         const { rfpId } = await response.json();
         router.push(`/rfp/${rfpId}`);
       } else {
-        setError('Failed to create RFP project.');
+        if (response.status === 403) {
+          setError(
+            <span>
+              You do not have enough credits. <Link href="/pricing" className="underline font-bold">Buy credits</Link>
+            </span>
+          );
+        } else {
+          setError('Failed to create RFP project.');
+        }
         setIsCreating(false);
       }
     } catch (err) {
