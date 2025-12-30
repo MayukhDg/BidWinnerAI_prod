@@ -34,12 +34,12 @@ export async function POST(req) {
 
   // Handle successful subscription/order
   if (
-    event.type === 'checkout.created' ||
     event.type === 'order.created' ||
     event.type === 'subscription.created' ||
     event.type === 'subscription.active' ||
     event.type === 'subscription.updated'
   ) {
+    console.log('Processing event for credit addition:', event.type);
     const data = event.data;
 
     // Extract user info from metadata or customer email
