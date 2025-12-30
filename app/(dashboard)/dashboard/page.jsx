@@ -19,11 +19,23 @@ export default async function DashboardPage() {
   const documentsCollection = await getCollection('documents');
   const rfpsCollection = await getCollection('rfps');
 
-  const documentCount = await documentsCollection.countDocuments({ userId: user._id });
+  // Get RFP document IDs to exclude them
+  const rfps = await rfpsCollection
+    .find({ userId: user._id }, { projection: { documentId: 1 } })
+    .toArray();
+  const rfpDocumentIds = rfps.map(r => r.documentId);
+
+  const documentCount = await documentsCollection.countDocuments({ 
+    userId: user._id,
+    purpose: { $ne: 'rfp_source' },
+    _id: { $nin: rfpDocumentIds }
+  });
   const rfpCount = await rfpsCollection.countDocuments({ userId: user._id });
   const completedDocuments = await documentsCollection.countDocuments({
     userId: user._id,
     status: 'completed',
+    purpose: { $ne: 'rfp_source' },
+    _id: { $nin: rfpDocumentIds }
   });
 
   const stats = [
