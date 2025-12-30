@@ -88,7 +88,7 @@ export async function POST(req) {
 
     // Trigger Inngest event
     await inngest.send({
-      name: 'document/process',
+      name: 'document/process.requested',
       data: {
         documentId: documentId.toString(),
         userId: user._id.toString(),
