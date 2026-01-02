@@ -23,25 +23,18 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      {/* Decorative background elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-indigo-300/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-cyan-300/20 rounded-full blur-3xl" />
-      </div>
-
-      <nav className="sticky top-0 z-50 glass border-b border-slate-200/50">
+    <div className="min-h-screen bg-background">
+      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/dashboard" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:shadow-xl group-hover:shadow-indigo-500/40 transition-all duration-300">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center group-hover:bg-primary/90 transition-colors">
+                  <svg className="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="text-xl font-bold text-foreground">
                   BidwinnerAI
                 </span>
               </Link>
@@ -53,25 +46,23 @@ export default function DashboardLayout({ children }) {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100">
-                <span className="text-sm font-medium text-indigo-600">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-input">
+                <span className="text-sm font-medium text-secondary-foreground">
                   Credits: {subscription?.credits || 0}
                 </span>
-                <Link href="/pricing" className="ml-2 text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full hover:bg-indigo-700 transition-colors">
+                <Link href="/pricing" className="ml-2 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full hover:bg-primary/90 transition-colors">
                   Buy More
                 </Link>
               </div>
               
-              <div className="p-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500">
-                <div className="bg-white rounded-full">
-                  <UserButton 
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-8 h-8"
-                      }
-                    }}
-                  />
-                </div>
+              <div className="p-0.5">
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8"
+                    }
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -95,7 +86,7 @@ function NavLink({ href, icon, children }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-500 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-600 transition-colors gap-2 h-full"
+      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-muted-foreground hover:text-primary border-b-2 border-transparent hover:border-primary transition-colors gap-2 h-full"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         {icons[icon]}
